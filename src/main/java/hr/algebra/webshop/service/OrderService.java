@@ -1,118 +1,91 @@
 package hr.algebra.webshop.service;
 
 import hr.algebra.webshop.dto.OrderDto;
+import hr.algebra.webshop.exceptions.ObjectEmptyException;
+import hr.algebra.webshop.exceptions.EntityNotFoundException;
 import hr.algebra.webshop.model.*;
+import hr.algebra.webshop.repository.CartRepository;
 import hr.algebra.webshop.repository.OrderRepository;
-import hr.algebra.webshop.repository.ProductRepository;
 import hr.algebra.webshop.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
-    private final ProductRepository productRepository;
+    private final CartRepository cartRepository;
 
     public List<OrderDto> getAllOrders() {
-        return orderRepository.findAll().stream()
-                .map(order -> new OrderDto(
-                        order.getId(),
-                        order.getUser().getId(),
-                        order.getOrderItems().stream().map(item -> item.getProduct().getId()).toList(),
-                        order.getOrderItems().stream().mapToDouble(item -> item.getProduct().getPrice()).sum(),
-                        order.getStatus()))
-                .toList();
+        return orderRepository.findAll().stream().map(this::toDto).toList();
     }
 
     public Optional<OrderDto> getOrderById(Long orderId) {
-        return orderRepository.findById(orderId).map(order -> new OrderDto(
-                order.getId(),
-                order.getUser().getId(),
-                order.getOrderItems().stream().map(item -> item.getProduct().getId()).toList(),
-                order.getOrderItems().stream().mapToDouble(item -> item.getProduct().getPrice()).sum(),
-                order.getStatus()));
+        return orderRepository.findById(orderId).map(this::toDto);
     }
 
     public List<OrderDto> getOrdersByUserId(Long userId) {
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            return orderRepository.findByUser(user.get()).stream()
-                    .map(order -> new OrderDto(
-                            order.getId(),
-                            order.getUser().getId(),
-                            order.getOrderItems().stream().map(item -> item.getProduct().getId()).toList(),
-                            order.getOrderItems().stream().mapToDouble(item -> item.getProduct().getPrice()).sum(),
-                            order.getStatus()))
-                    .toList();
-        }
-        return List.of();
+        return userRepository.findById(userId)
+                .map(orderRepository::findByUser)
+                .orElse(List.of())
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
-    public Optional<OrderDto> createOrder(OrderDto orderDto) {
-        Optional<User> user = userRepository.findById(orderDto.getUserId());
-        if (user.isPresent()) {
-            return Optional.empty();
-        }
+    @Transactional
+    public OrderDto completeOrder(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User with id " + userId + " not found"));
 
-        List<Product> products = productRepository.findAllById(orderDto.getProducts());
-        if (products.isEmpty()) {
-            return Optional.empty();
-        }
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new EntityNotFoundException("Cart with id " + userId + " not found"));
 
-        double totalPrice = products.stream().mapToDouble(Product::getPrice).sum();
+        if (cart.getItems().isEmpty()) {
+            throw new ObjectEmptyException("Cart is empty. Cannot complete purchase.");
+        }
 
         Order order = new Order();
-        order.setUser(user.get());
+        order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
 
-        List<OrderItem> orderItems = products.stream()
-                .map(product -> new OrderItem(null, order, product, 1))
-                .toList();
+        List<OrderItem> orderItems = cart.getItems().entrySet().stream()
+                .map(entry ->{
+                    Product product = entry.getKey();
+                    int quantity = entry.getValue();
+
+                    OrderItem orderItem = new OrderItem();
+                    orderItem.setOrder(order);
+                    orderItem.setProduct(product);
+                    orderItem.setQuantity(quantity);
+                    return orderItem;
+                }).toList();
 
         order.setOrderItems(orderItems);
         orderRepository.save(order);
 
-        return Optional.of(new OrderDto(
+        cart.getItems().clear();
+        cartRepository.save(cart);
+
+        return toDto(order);
+    }
+
+
+
+    private OrderDto toDto(Order order) {
+        return new OrderDto(
                 order.getId(),
                 order.getUser().getId(),
-                orderItems.stream().map(item -> item.getProduct().getId()).toList(),
-                totalPrice,
+                order.getOrderItems().stream().map(item -> item.getProduct().getId()).toList(),
+                order.getOrderItems().stream().mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity()).sum(),
                 order.getStatus()
-        ));
-    }
-
-    public Optional<OrderDto> updateOrderStatus(Long orderId, OrderStatus orderStatus) {
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
-        if (orderOptional.isPresent()) {
-            Order order = orderOptional.get();
-            order.setStatus(orderStatus);
-            orderRepository.save(order);
-
-            return Optional.of(new OrderDto(
-                    order.getId(),
-                    order.getUser().getId(),
-                    order.getOrderItems().stream().map(item -> item.getProduct().getId()).toList(),
-                    order.getOrderItems().stream().mapToDouble(item -> item.getProduct().getPrice()).sum(),
-                    order.getStatus()));
-        }
-        return Optional.empty();
-    }
-
-    public boolean deleteOrder(Long orderId) {
-        if (orderRepository.existsById(orderId)) {
-            orderRepository.deleteById(orderId);
-            return true;
-        }
-        return false;
+        );
     }
 }
