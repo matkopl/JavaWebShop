@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebShop Landing Page</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<!-- Navigacija -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">WebShop</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/products">Products</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/categories">Categories</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/cart">Cart</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/auth/login">Login</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Glavni sadržaj -->
+<div class="container mt-5">
+    <h1>Welcome to WebShop!</h1>
+    <p>Explore our products and categories.</p>
+
+    <!-- Listing proizvoda -->
+    <div class="row mt-4">
+        <!-- Iteracija kroz proizvode -->
+        <div class="col-md-4 mb-4" th:each="product : ${products}">
+            <div class="card h-100">
+                <!-- Slika proizvoda -->
+                <img th:src="@{/images/{product.id}(product.id=${product.id})}" alt="Product Image" class="card-img-top">
+
+                <!-- Podaci o proizvodu -->
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${product.name}">Product Name</h5>
+                    <p class="card-text">Category:
+                        <span th:text="${product.categoryId}"></span> <!-- Kategorija -->
+                    </p>
+                    <p class="card-text">Price: $<span th:text="${product.price}"></span></p>
+
+                    <!-- Gumb za dodavanje u košaricu -->
+                    <a th:href="@{/api/cart/{userId}/add/{product.id}(userId=1, product.id=${product.id})}"
+                       class="btn btn-primary">Add to Cart</a>
+
+                    <!-- Link za detalje o proizvodu -->
+                    <a th:href="@{/products/{product.id}(product.id=${product.id})}"
+                       class="btn btn-secondary mt-2">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

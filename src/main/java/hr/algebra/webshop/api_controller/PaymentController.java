@@ -1,4 +1,4 @@
-package hr.algebra.webshop.controller;
+package hr.algebra.webshop.api_controller;
 
 import com.paypal.api.payments.Links;
 import com.paypal.api.payments.Payment;

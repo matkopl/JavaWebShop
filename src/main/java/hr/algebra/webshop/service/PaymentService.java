@@ -3,10 +3,7 @@ package hr.algebra.webshop.service;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.PayPalRESTException;
-import hr.algebra.webshop.config.PaypalConfig;
 import lombok.RequiredArgsConstructor;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

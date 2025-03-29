@@ -1,17 +1,12 @@
-package hr.algebra.webshop.controller;
+package hr.algebra.webshop.api_controller;
 
 import hr.algebra.webshop.dto.OrderDto;
-import hr.algebra.webshop.dto.OrderItemDto;
-import hr.algebra.webshop.model.Order;
-import hr.algebra.webshop.model.OrderItem;
-import hr.algebra.webshop.model.OrderStatus;
 import hr.algebra.webshop.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("api/orders")

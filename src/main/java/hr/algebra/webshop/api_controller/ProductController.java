@@ -1,4 +1,4 @@
-package hr.algebra.webshop.controller;
+package hr.algebra.webshop.api_controller;
 
 import hr.algebra.webshop.dto.ProductDto;
 import hr.algebra.webshop.service.ProductService;
